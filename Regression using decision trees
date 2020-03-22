@@ -1,0 +1,51 @@
+# Loading the King County Housing data
+house_price_data <- read.csv("kc_house_data.csv")
+# Ignoring attributes such as id(1), date(2), zipcode(17), lat(18) and long(19) from the analysis
+house_price_data <- house_price_data[,-c(1,2,17,18,19)]
+# Splitting this data into training and testing set
+set.seed(50)
+data_size <- nrow(house_price_data)
+train_size <- 0.70*data_size
+train_indices <- sample(1:data_size,train_size)
+train_data <- house_price_data[train_indices,]
+test_data <- house_price_data[-train_indices,]
+# Inducting a decision tree to predict the price using rpart
+library(rpart)
+library(rpart.plot)
+house_prediction_model <- rpart(price~.,data = train_data)
+rpart.plot(house_prediction_model,type = 3, extra = 1,tweak=1.1)
+# SST = sum((actual value - average value)^2)
+SST <- sum((train_data$price - mean(train_data$price))^2)
+print(SST)
+# Obtained value = 2.175708e+15
+# Splitting the train_data on sqft_living value of 3268
+# Left split SL1: sqft_living<3268
+left_split_1 <- subset(train_data,(sqft_living < 3268))
+SSL1 <- sum((left_split_1$price - mean(left_split_1$price))^2)
+# Right Split SR1: sqft_living >= 3268
+right_split_1 <- subset(train_data,(sqft_living >= 3268))
+SSR1 <- sum((right_split_1$price - mean(right_split_1$price))^2)
+# Values of SSL1 and SSR1 obtained are
+print(SSL1) # SSL1 = 7.178254e+14
+print(SSR1) # SSR1 = 7.819408e+14
+# Splitting the train_data on grade value of 8.5
+# Left split SL2: grade < 8.5
+left_split_2 <- subset(train_data,(grade < 8.5))
+SSL2 <- sum((left_split_2$price - mean(left_split_2$price))^2)
+# Right Split SR2: grade >= 8.5
+right_split_2 <- subset(train_data,(grade >= 8.5))
+SSR2 <- sum((right_split_2$price - mean(right_split_2$price))^2)
+# Values of SSL2 and SSR2 obtained are
+print(SSL2) # SSL2 = 4.620005e+14
+print(SSR2) # SSR2 = 1.032405e+15 
+# Delta Error for Split 1 (split on sqft_living)
+n <- nrow(train_data)
+nl1 <- nrow(left_split_1)
+nr1 <- nrow(right_split_1)
+delta_error_split_1 <- SST - (((nl1/n)*SSL1) + ((nr1/n)*SSR1))
+print(delta_error_split_1) # delta_error_split_1 = 1.45139e+15
+# Delta Error for Split 2 (split on grade)
+nl2 <- nrow(left_split_2)
+nr2 <- nrow(right_split_2)
+delta_error_split_2 <- SST - (((nl2/n)*SSL2) + ((nr2/n)*SSR2))
+print(delta_error_split_2) # delta_error_split_2 = 1.599694e+15
